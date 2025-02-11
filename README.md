@@ -35,6 +35,7 @@ df_spf.to_csv("UNP_IncomeStatement_2022.csv", index=False)
 ```
 
 Output (Balance Sheet):
+(Same as reported by the company in https://www.sec.gov/Archives/edgar/data/100885/000143774922002494/R5.htm)
 
 |    | xbrl_tag                                                              | label                                                                                                                                                   |   value_in_millions |
 |---:|:----------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------:|
