@@ -164,79 +164,90 @@ def get_filing_info(cik='', forms=[], year=0, quarter=0):
 
     return _get_filing_info(cik=cik, forms=forms, year=year_str, quarter=quarter_str)
 
+import os
+import json
+from datetime import datetime, timedelta
+from pathlib import Path
+
+def _get_cache_path(year, quarter):
+    """Create cache directory if it doesn't exist and return cache file path"""
+    cache_dir = Path('edgar_cache')
+    cache_dir.mkdir(exist_ok=True)
+    filename = f'master_idx_{year}_{quarter}.txt'
+    filename = filename.replace('/', '_')
+    return os.path.join(cache_dir, filename)
+
+def _is_cache_valid(cache_path, max_age_days=1):
+    """Check if cache file exists and is not too old"""
+    if not os.path.exists(cache_path):
+        return False
+    
+    file_time = datetime.fromtimestamp(os.path.getmtime(cache_path))
+    age = datetime.now() - file_time
+    return age.days < max_age_days
 
 def _get_filing_info(cik='', forms=[], year='', quarter=''):
-    '''
+    """
     Return a List of FilingInfo
-        If forms are specified, only filings with the given value will be returned
-        e.g. 10-K, 10-Q, 3, 4, 5
-        year and quarter are defaulted to '', but can be replaced with an item.href
-        from index.json
-    '''
+    If forms are specified, only filings with the given value will be returned
+    e.g. 10-K, 10-Q, 3, 4, 5
+    """
     def _get_raw_data(row):
-        '''
-        Returns a list from a string (master idx row) that is delimited by "|"
-
-        Format of master.idx file is as follows:
-
-        CIK|Company Name|Form Type|Date Filed|Filename
-        --------------------------------------------------------------------------------
-        1000209|MEDALLION FINANCIAL CORP|8-K|2019-01-08|edgar/data/1000209/0001193125-19-004285.txt
-        1000209|MEDALLION FINANCIAL CORP|8-K|2019-01-11|edgar/data/1000209/0001193125-19-007413.txt
-        1000228|HENRY SCHEIN INC|425|2019-01-07|edgar/data/1000228/0001193125-19-003023.txt
-        '''
         return row.split('|')
 
     def _add_filing_info(filing_infos, data, forms):
-        '''
-        Adds a FilingInfo from data to a list
-
-        :param data: list of length 5 with the following data indices:
-            0=cik, 1=company, 2=form, 3=date_filed, 4=file_name 
-        '''
         if len(data) == 5 and (forms == [] or data[2] in forms):
-            # Form Type should among forms or forms be default (all)
             filing_infos.append(FilingInfo(
-                        data[1], # Company Name
-                        data[2], # Form Type
-                        data[0], # CIK
-                        data[3], # Date Filed
-                        data[4].strip() # File Name
-                    ))
+                data[1],  # Company Name
+                data[2],  # Form Type
+                data[0],  # CIK
+                data[3],  # Date Filed
+                data[4].strip()  # File Name
+            ))
 
     for form in forms:
         if form not in SUPPORTED_FORMS:
-            raise InvalidInputException('{} is not a supported form'.format(form))
+            raise InvalidInputException(f'{form} is not a supported form')
 
-    # using master.idx so it's sorted by cik and we can use binary search
-    url = '{}{}{}{}'.format(FULL_INDEX_URL, year, quarter, MASTER_IDX)
-    print('getting {} filing info from {}'.format(forms, url))
+    # Check cache first
+    cache_path = _get_cache_path(year, quarter)
+    
+    if _is_cache_valid(cache_path):
+        #print(f'Using cached data from {cache_path}')
+        with open(cache_path, 'r') as f:
+            text = f.read()
+    else:
+        # If cache doesn't exist or is too old, fetch from URL
+        url = f'{FULL_INDEX_URL}{year}{quarter}{MASTER_IDX}'
+        print(f'Fetching filing info from {url}')
+        
+        response = GetRequest(url).response
+        text = response.text
+        
+        # Save to cache
+        with open(cache_path, 'w') as f:
+            f.write(text)
+        print(f'Saved response to cache: {cache_path}')
 
-    response = GetRequest(url).response
-    text = response.text
-    # print(text)
     rows = text.split('\n')
     data_rows = rows[11:]
-
     filing_infos = []
 
     if cik != '':
-        # binary search to get company's filing info
+        # Binary search to get company's filing info
         start = 0
         end = len(data_rows)
 
         while start < end:
-            mid = (start+end)//2
+            mid = (start + end) // 2
             data = _get_raw_data(data_rows[mid])
 
-            # comparisons are done as strings, same as ordering in master.idx
-            # e.g. 11 > 100
             if data[0] == cik:
                 # matched cik
                 _add_filing_info(filing_infos, data, forms)
 
-                # get all before and after (there can be multiple)
-                # go backwards to get those before
+                # Get all before and after (there can be multiple)
+                # Go backwards to get those before
                 index = mid - 1
                 data = _get_raw_data(data_rows[index])
                 while data[0] == cik and index >= 0:
@@ -244,7 +255,7 @@ def _get_filing_info(cik='', forms=[], year='', quarter=''):
                     index -= 1
                     data = _get_raw_data(data_rows[index])
 
-                # after
+                # After
                 index = mid + 1
                 data = _get_raw_data(data_rows[index])
                 while data[0] == cik and index < len(data_rows):
@@ -259,14 +270,12 @@ def _get_filing_info(cik='', forms=[], year='', quarter=''):
             else:
                 end = mid - 1
     else:
-        # go through all
+        # Go through all
         for row in data_rows:
             data = _get_raw_data(row)
             _add_filing_info(filing_infos, data, forms)
 
-
     return filing_infos
-
 
 
 def get_financial_filing_info(period, cik, year='', quarter=''):
