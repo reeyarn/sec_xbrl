@@ -35,6 +35,7 @@ df_spf.to_csv("UNP_IncomeStatement_2022.csv", index=False)
 ```
 
 Output:
+
 |    | xbrl_tag                                                              | label                                                                                                                                                   |   value_in_millions |
 |---:|:----------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------:|
 |  0 | us-gaap_CashAndCashEquivalentsAtCarryingValue                         | Cash and cash equivalents                                                                                                                               |                 960 |
