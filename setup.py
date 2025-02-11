@@ -5,9 +5,10 @@ from setuptools import setup
 here = os.path.abspath(os.path.dirname(__file__))
 
 requires = [
-    'pandas==0.23.4',
+    'pandas==2.2.3',
     'requests==2.20.0',
-    'bs4==0.0.1',
+    'bs4==0.0.2',
+    "thefuzz==0.22.1",
 ]
 
 test_requirements = [
