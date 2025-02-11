@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
-from edgar.dtd import DTD
-from edgar.document_text import DocumentText
+from sec_xbrl.dtd import DTD
+from sec_xbrl.document_text import DocumentText
 
 class Document:
     dtd = DTD()

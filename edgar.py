@@ -25,7 +25,7 @@ https://www.sec.gov/forms):
     4: insider trading (gets us the stock symbol (issuerTradingSymbol))
 These can all have ammendments made, e.g. 10-Q/A
 '''
-from edgar.requests_wrapper import GetRequest
+from sec_xbrl.requests_wrapper import GetRequest
 import json
 import re
 from datetime import datetime
