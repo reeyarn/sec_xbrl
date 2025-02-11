@@ -6,6 +6,8 @@ from sec_xbrl.edgar import get_financial_filing_info, get_latest_quarter_dir, fi
 from sec_xbrl.filing import Filing
 from datetime import datetime
 
+
+# stock
 class Stock:
     def __init__(self, symbol):
         self.symbol = symbol

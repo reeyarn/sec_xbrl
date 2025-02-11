@@ -8,8 +8,10 @@ from sec_xbrl.dtd import DTD
 from sec_xbrl.financials import get_financial_report
 from datetime import datetime
 
+from thefuzz import fuzz
 
 FILING_SUMMARY_FILE = 'FilingSummary.xml'
+
 
 
 
@@ -46,12 +48,22 @@ class Statements:
                     'condensed consolidated statements of cash flows',
                     'condensed statements of cash flows'
                     ]
+    retained_earnings = ['consolidated retained earnings',
+                    'consolidated statement of retained earnings',
+                    'condensed consolidated statement of retained earnings',
+                    'condensed statement of retained earnings'
+                    'condensed consolidated statement of retained earnings (unaudited)',
+                    "statement of changes in common shareholders' equity",
+                    "consolidated statement of changes in common shareholders' equity",
+                    ]
 
-    all_statements = income_statements + balance_sheets + cash_flows
+    all_statements = income_statements + balance_sheets + cash_flows + retained_earnings
+
 
 
 
 class Filing:
+
 
     STATEMENTS = Statements()
     sgml = None
@@ -70,7 +82,7 @@ class Filing:
         print('Processing SGML at '+url)
         
         dtd = DTD()
-        sgml = Sgml(text, dtd)
+        sgml = Sgml(self.text, dtd)
 
         self.sgml = sgml
 
@@ -106,8 +118,7 @@ class Filing:
         for names in self._get_statement(statement_short_names):
             short_name = names[0]
             filename = names[1]
-            print('Getting financial data for {0} (filename: {1})'
-                .format(short_name, filename))
+            #print('Getting financial data for {0} (filename: {1})'.format(short_name, filename))
             financial_html_text = self.documents[filename].doc_text.data
 
             financial_report = get_financial_report(self.company, self.date_filed, financial_html_text)
@@ -136,8 +147,8 @@ class Filing:
                 filename = self.get_html_file_name(filing_summary_xml, short_name)
                 if filename is not None:
                     statement_names += [(short_name, filename)]
-        else:
-            print('No financial documents in this filing')
+        # else:
+        #     print('No financial documents in this filing')
 
         if len(statement_names) == 0:
             print('No financial documents could be found. Likely need to \
@@ -155,22 +166,35 @@ class Filing:
         e.g.
              report_short_name of consolidated statements of income matches
              CONSOLIDATED STATEMENTS OF INCOME
+        #report_short_name = balance_sheets[1]
         '''
         reports = filing_summary_xml.find_all('report')
+        best_match = {
+            'ratio': 75,
+            'filename': None
+        }        
         for report in reports:
             short_name = report.find('shortname')
+            #print(short_name)
             if short_name is None:
-                print('The following report has no ShortName element')
-                print(report)
+                #print('The following report has no ShortName element')
+                #print(report)
                 continue
             # otherwise, get the text and keep procesing
             short_name = short_name.get_text().lower()
+
             # we want to make sure it matches, up until the end of the text
-            if short_name == report_short_name.lower():
-                filename = report.find('htmlfilename').get_text()
-                return filename
-        print(f'could not find anything for ShortName {report_short_name.lower()}')
-        return None
+            this_ratio = fuzz.ratio(short_name, report_short_name.lower())
+            if this_ratio > best_match['ratio']:
+                best_match['ratio'] = this_ratio
+                best_match['filename'] = report.find('htmlfilename').get_text()
+
+        if best_match['ratio'] > 80: # this condition need to fuzzy 
+            filename = best_match['filename']
+            return filename
+        else:
+            #print(f'could not find anything for ShortName {report_short_name.lower()}')
+            return None
 
 
 
@@ -182,3 +206,5 @@ class Filing:
 
     def get_cash_flows(self):
         return self._get_financial_data(self.STATEMENTS.cash_flows, False)
+    def get_retained_earnings(self):
+        return self._get_financial_data(self.STATEMENTS.retained_earnings, False)

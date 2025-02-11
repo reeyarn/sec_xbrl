@@ -1,4 +1,8 @@
 from bs4 import BeautifulSoup
+from bs4 import XMLParsedAsHTMLWarning
+import warnings
+warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
+
 from sec_xbrl.dtd import DTD
 
 

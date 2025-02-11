@@ -28,6 +28,7 @@ class FinancialElement:
 
 
 
+
 class FinancialInfo:
     '''
     Models financial data provided in a financial report
@@ -45,6 +46,9 @@ class FinancialInfo:
 
     def __repr__(self):
         return str(self.__dict__)
+
+
+
 
 
 
@@ -115,6 +119,7 @@ The next part differs based on 10-K and 10-Q
 
 
 
+
 def get_financial_report(company, date_filed, financial_html_text):
     '''
     Returns a FinancialReport from html-structured financial data
@@ -128,6 +133,7 @@ def get_financial_report(company, date_filed, financial_html_text):
     financial_info = _process_financial_info(financial_html_text)
     financial_report = FinancialReport(company, date_filed, financial_info)
     return financial_report
+
 
 
 
@@ -212,6 +218,7 @@ def _process_financial_info(financial_html_text):
 
 
 
+
 def _get_statement_meta_data(rows):
     '''
     Returns the dates, period_units, unit_text given the html table rows of a
@@ -233,6 +240,7 @@ def _get_statement_meta_data(rows):
     # all the meta data we need is in the first two tables rows
     for row_num, row in enumerate(rows[:2]):
         # meta data comes from the table headers
+        #row_num = 0; row =rows[row_num]
         data = row.find_all('th')
 
 
@@ -259,7 +267,7 @@ def _get_statement_meta_data(rows):
                     # Not yet using Statements.balance_sheets from filing.py because not sure
                     # if we can assume that the FilingSummary names will be consistent with the 
                     # title
-                    if 'balance' in title.lower() or 'statement of financial position' in title.lower():
+                    if 'balance' in title.lower() or 'financial position' in title.lower():
                         is_snapshot = True
 
                 elif 'th' in class_list:
@@ -289,8 +297,8 @@ def _get_statement_meta_data(rows):
 
 
     if len(dates) != len(period_units):
-        raise MetaDataParsingException('Potential parsing bug: len dates {} != len period_units {}'.format(dates, period_units))
-
+        #raise MetaDataParsingException('Potential parsing bug: len dates {} != len period_units {}'.format(dates, period_units))
+        print('Potential parsing bug: len dates {} != len period_units {}'.format(dates, period_units))
     return dates, period_units, unit_text
 
 
@@ -302,6 +310,7 @@ def _process_period(info_text):
     :param info_text: a reporting period, e.g. "12 Months Ended"
     '''
     return int(re.sub('[^0-9]', '', info_text))
+
 
 
 
@@ -325,6 +334,8 @@ def _process_xbrl_element(info):
         ).replace('\', window );', '')
 
     return xbrl_element
+
+
 
 
 
@@ -365,3 +376,5 @@ def _process_financial_value(text, xbrl_element, unit_text):
         print('Warning: {} (from {}) is not numeric even after removing special characters () - ignoring'.format(text, xbrl_element, amount_text))
 
     return value
+
+
