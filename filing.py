@@ -69,7 +69,7 @@ import os
 
 class Filing:
     STATEMENTS = Statements()
-    CACHE_DIR = Path('edgar_cache/filings')
+    CACHE_DIR = Path('sec_reports')
     CACHE_VALIDITY_DAYS = 30  # Cache files for 30 days by default
     sgml = None
 
@@ -77,9 +77,9 @@ class Filing:
         self.url = url
         self.company = company
         
-        # Create cache directory if it doesn't exist
+        # Create base cache directory if it doesn't exist
         self.CACHE_DIR.mkdir(parents=True, exist_ok=True)
-        
+
         # Load from cache or fetch and cache
         self._load_or_fetch_filing()
 
@@ -104,12 +104,6 @@ class Filing:
         
         return cik_dir / filename
 
-    def _get_cache_filename(self):
-        """Generate a safe filename for caching based on the URL"""
-        # Convert URL to a safe filename by replacing unsafe characters
-        safe_filename = self.url.replace('/', '_').replace(':', '_').replace('.', '_')
-        return self.CACHE_DIR / f"{safe_filename}"
-    
     def _is_cache_valid(self, cache_path):
         """Check if cache file exists and is not too old"""
         if not cache_path.exists():
@@ -118,40 +112,23 @@ class Filing:
         file_time = datetime.fromtimestamp(cache_path.stat().st_mtime)
         age = datetime.now() - file_time
         return age.days < self.CACHE_VALIDITY_DAYS
-    
+
     def _save_to_cache(self, text):
         """Save raw text to cache"""
-        cache_path = self._get_cache_filename()
+        cache_path = self._get_cache_path()
         with open(cache_path, 'w', encoding='utf-8') as f:
             f.write(text)
         print(f'Saved filing to cache: {cache_path}')
-
-    def _extract_document_text(self, document, document_raw):
-        """Extract or generate the text content of a document."""
-        # Implement your logic here to extract the text content from document_raw
-        # This will depend on the structure of your Document objects and the raw data
-        # Example:
-        try:
-            return document_raw.text # If document_raw has a text attribute
-        except AttributeError:
-            # Implement other extraction methods based on document_raw structure
-            # For instance, if it's a list of strings:
-            try:
-                return "".join(document_raw)
-            except TypeError:
-                return "" # Or handle other cases as needed. Return an empty string if extraction fails.
-
-
 
     def _load_from_cache(self, cache_path):
         """Load filing text from cache and process it"""
         with open(cache_path, 'r', encoding='utf-8') as f:
             self.text = f.read()
         
-        print(f'Loaded filing from cache: {cache_path}')
+        #print(f'Loaded filing from cache: {cache_path}')
         
         # Process the text
-        print('Processing SGML from cache: ' + self.url)
+        #print('Processing SGML from cache: ' + self.url)
         dtd = DTD()
         self.sgml = Sgml(self.text, dtd)
         
@@ -165,8 +142,6 @@ class Filing:
         acceptance_datetime_element = self.sgml.map[dtd.sec_document.tag][dtd.sec_header.tag][dtd.acceptance_datetime.tag]
         acceptance_datetime_text = acceptance_datetime_element[:8]
         self.date_filed = datetime.strptime(acceptance_datetime_text, '%Y%m%d')
-
-
 
     def _fetch_and_process_filing(self):
         """Fetch filing from URL and process it"""
@@ -214,10 +189,6 @@ class Filing:
     def get_statements(self):
         """Get financial statements from the filing"""
         return self.STATEMENTS.process(self)
-
-
-
-
 
 
 
