@@ -12,7 +12,7 @@ from thefuzz import fuzz
 
 FILING_SUMMARY_FILE = 'FilingSummary.xml'
 
-import re
+
 
 
 class Statements:
@@ -62,7 +62,7 @@ class Statements:
 
 from datetime import datetime
 from pathlib import Path
-#import json
+import json
 import os
 
 
@@ -76,6 +76,7 @@ class Filing:
     def __init__(self, url, company=None):
         self.url = url
         self.company = company
+        self.documents = {}
         
         # Create cache directory if it doesn't exist
         self.CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -83,33 +84,12 @@ class Filing:
         # Load from cache or fetch and cache
         self._load_or_fetch_filing()
 
-    def _get_cache_path(self):
-        """
-        Generate cache path maintaining EDGAR's folder structure
-        Example URL: https://www.sec.gov/Archives/edgar/data/100885/0001437749-22-002494.txt
-        Returns: sec_reports/100885/0001437749-22-002494.txt
-        """
-        # Extract CIK and filename using regex
-        pattern = r'/data/(\d+)/(\d+-\d+-\d+\.txt)$'
-        match = re.search(pattern, self.url)
-        
-        if not match:
-            raise ValueError(f"Unable to parse CIK and filename from URL: {self.url}")
-            
-        cik, filename = match.groups()
-        
-        # Create CIK subdirectory
-        cik_dir = self.CACHE_DIR / cik
-        cik_dir.mkdir(exist_ok=True)
-        
-        return cik_dir / filename
-
     def _get_cache_filename(self):
         """Generate a safe filename for caching based on the URL"""
         # Convert URL to a safe filename by replacing unsafe characters
         safe_filename = self.url.replace('/', '_').replace(':', '_').replace('.', '_')
-        return self.CACHE_DIR / f"{safe_filename}"
-    
+        return self.CACHE_DIR / f"{safe_filename}.json"
+
     def _is_cache_valid(self, cache_path):
         """Check if cache file exists and is not too old"""
         if not cache_path.exists():
@@ -118,12 +98,20 @@ class Filing:
         file_time = datetime.fromtimestamp(cache_path.stat().st_mtime)
         age = datetime.now() - file_time
         return age.days < self.CACHE_VALIDITY_DAYS
-    
-    def _save_to_cache(self, text):
-        """Save raw text to cache"""
+
+    def _save_to_cache(self, cache_data):
+        """Save filing data to cache"""
         cache_path = self._get_cache_filename()
-        with open(cache_path, 'w', encoding='utf-8') as f:
-            f.write(text)
+
+        try:
+            with open(cache_path, 'w', encoding='utf-8') as f:
+                json.dump(cache_data, f, default=str) # Use default=str to handle non-serializable objects
+        except TypeError as e:
+            print(f"Error saving to cache: {e}") # Log the error and potentially remove the incomplete cache file
+            try:
+                os.remove(cache_path)
+            except OSError:
+                pass # Ignore if file doesn't exist
         print(f'Saved filing to cache: {cache_path}')
 
     def _extract_document_text(self, document, document_raw):
@@ -142,66 +130,69 @@ class Filing:
                 return "" # Or handle other cases as needed. Return an empty string if extraction fails.
 
 
-
     def _load_from_cache(self, cache_path):
-        """Load filing text from cache and process it"""
+        """Load filing data from cache"""
         with open(cache_path, 'r', encoding='utf-8') as f:
-            self.text = f.read()
+            cache_data = json.load(f)
+            
+        self.text = cache_data['text']
+        self.date_filed = datetime.strptime(cache_data['date_filed'], '%Y-%m-%d')
         
+        # Reconstruct documents from cached data
+        for doc_filename, doc_data in cache_data['documents'].items():
+            document = Document(None)  # Create empty document
+            document.__dict__.update(doc_data)  # Update with cached data
+            self.documents[doc_filename] = document
+
         print(f'Loaded filing from cache: {cache_path}')
-        
-        # Process the text
-        print('Processing SGML from cache: ' + self.url)
-        dtd = DTD()
-        self.sgml = Sgml(self.text, dtd)
-        
-        # Process documents
-        self.documents = {}
-        for document_raw in self.sgml.map[dtd.sec_document.tag][dtd.document.tag]:
-            document = Document(document_raw)
-            self.documents[document.filename] = document
-
-        # Process filing date
-        acceptance_datetime_element = self.sgml.map[dtd.sec_document.tag][dtd.sec_header.tag][dtd.acceptance_datetime.tag]
-        acceptance_datetime_text = acceptance_datetime_element[:8]
-        self.date_filed = datetime.strptime(acceptance_datetime_text, '%Y%m%d')
-
-
 
     def _fetch_and_process_filing(self):
         """Fetch filing from URL and process it"""
         print(f'Fetching filing from {self.url}')
         response = GetRequest(self.url).response
         self.text = response.text
-        
-        # Save raw text to cache before processing
-        self._save_to_cache(self.text)
 
         print('Processing SGML at ' + self.url)
         dtd = DTD()
-        self.sgml = Sgml(self.text, dtd)
+        sgml = Sgml(self.text, dtd)
+        self.sgml = sgml
 
         # Process documents
-        self.documents = {}
-        for document_raw in self.sgml.map[dtd.sec_document.tag][dtd.document.tag]:
-            document = Document(document_raw)
-            self.documents[document.filename] = document
+        for document_raw in sgml.map.get(dtd.sec_document.tag, {}).get(dtd.document.tag, []):  # Handle potential missing tags
+            try:
+                document = Document(document_raw)
+                # Ensure document.text is extracted or set appropriately
+                if not hasattr(document, 'text'):
+                    document.text = self._extract_document_text(document, document_raw) # New method to handle text extraction
+                self.documents[document.filename] = document
+            except Exception as e:
+                print(f"Error processing document: {e}") # Log the error and continue
 
         # Process filing date
-        acceptance_datetime_element = self.sgml.map[dtd.sec_document.tag][dtd.sec_header.tag][dtd.acceptance_datetime.tag]
+        acceptance_datetime_element = sgml.map[dtd.sec_document.tag][dtd.sec_header.tag][dtd.acceptance_datetime.tag]
         acceptance_datetime_text = acceptance_datetime_element[:8]
         self.date_filed = datetime.strptime(acceptance_datetime_text, '%Y%m%d')
 
+        # Cache the results
+        cache_data = {
+            'text': self.text,
+            'date_filed': self.date_filed.strftime('%Y-%m-%d'),
+            'documents': {
+                filename: {
+                    'filename': doc.filename,
+                    'type': doc.type,
+                    'description': doc.description,
+                    'text': doc.text
+                }
+                for filename, doc in self.documents.items()
+            }
+        }
+        self._save_to_cache(cache_data)
+
     def _load_or_fetch_filing(self):
         """Load filing from cache if available, otherwise fetch and cache it"""
-        try:
-            cache_path = self._get_cache_path()
-        except ValueError as e:
-            print(f"Warning: {e}")
-            # If we can't parse the URL, fetch without caching
-            self._fetch_and_process_filing()
-            return
-            
+        cache_path = self._get_cache_filename()
+        
         if self._is_cache_valid(cache_path):
             try:
                 self._load_from_cache(cache_path)
