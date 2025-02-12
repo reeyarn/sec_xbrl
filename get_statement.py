@@ -23,30 +23,43 @@ def get_annual_statement(ticker="UNP", year=2022):
     #ticker = "ACN"; year=2023; get_annual_statement(ticker, year)
     stock = Stock(ticker)
     filing = stock.get_filing(period='annual', year=year); #self = filing
-    income_statements = filing.get_income_statements()
-    cash_flows = filing.get_cash_flows()
-    balance_sheets = filing.get_balance_sheets()
+    dfs = []
+    try:
+        income_statements = filing.get_income_statements()
+        df_income = statement_to_df(income_statements)
+        df_income['statement'] = 'IncomeStatement'
+        dfs.append(df_income)
+    except Exception as e:
+        print(f"Error for {ticker} in {year}: {e}")
+        traceback.print_exc(limit = 10)
+
+    try:
+        cash_flows = filing.get_cash_flows()
+        df_cash = statement_to_df(cash_flows)
+        df_cash["statement"] = "CashFlowStatement"
+        dfs.append(df_cash)
+    except Exception as e:
+        print(f"Error for {ticker} in {year}: {e}")
+        traceback.print_exc(limit = 10)
+
+    try:
+        balance_sheets = filing.get_balance_sheets()
+        df_balance = statement_to_df(balance_sheets)
+        df_balance["statement"]="BalanceSheet"
+        dfs.append(df_balance)
+    except Exception as e:
+        print(f"Error for {ticker} in {year}: {e}")
+        traceback.print_exc(limit = 10)
     #retained_earnings = filing.get_retained_earnings()
 
-    df_income = statement_to_df(income_statements)
-    df_income['statement'] = 'IncomeStatement'
 
-    df_cash = statement_to_df(cash_flows)
-    df_cash["statement"] = "CashFlowStatement"
-
-    df_balance = statement_to_df(balance_sheets)
-    df_balance["statement"]="BalanceSheet"
-
-    #df_retained_earnings = statement_to_df(retained_earnings)
-    #df_retained_earnings["statement"]="RetainedEarnings"
-    #self = filing
-    df_all = pd.concat([df_income, df_cash, df_balance])
+    df_all = pd.concat(dfs)
     return df_all
 
 if __name__ == "__main__":
-    #import importlib ; import sec_xbrl.get_statement; importlib.reload(sec_xbrl.get_statement)
+    #import importlib ; import sec_xbrl.get_statement; importlib.reload(sec_xbrl.get_statement); from sec_xbrl.get_statement import *
     from sec_xbrl.get_statement import get_annual_statement
-    #ticker = "ACN"; year=2023; get_annual_statement(ticker, year)
+    #ticker = "MMM"; year=2023; get_annual_statement(ticker, year)
     import pandas as pd
     errors = []
     #ABT likely has xbrl error ; 
