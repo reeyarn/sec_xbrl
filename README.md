@@ -1,6 +1,12 @@
 Forked from `https://github.com/farhadab/sec-edgar-financials`
 
-Testing running the code only
+Testing running the code only.
+
+This repo uses non-XBRL way to get financial statements data.
+
+It uses BeautifulSoup to extract XBRL facts.
+
+If you want to use XBRL way, please refer to `https://github.com/reeyarn/openesef`
 
 # To installl
 `git clone "https://github.com/reeyarn/sec_xbrl"`

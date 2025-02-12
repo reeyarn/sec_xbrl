@@ -51,7 +51,8 @@ if __name__ == "__main__":
     errors = []
     #ABT likely has xbrl error ; 
     #MMM likely too
-    for ticker in ["MSFT", "AAPL", "MMM", "WMT", "ACN",  "AMZN", "NFLX", "ORCL", "QCOM"]:
+    ##remaining errors: ABT, ACN, ORCL, QCOM
+    for ticker in ["MSFT", "AAPL", "MMM",  "WMT", "ADBE", "AMZN", "NFLX" ]:
         for year in range(2019, 2023):
             try:
                     df_all = get_annual_statement(ticker=ticker, year=year)
