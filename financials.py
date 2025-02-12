@@ -5,6 +5,7 @@ import re
 from bs4 import BeautifulSoup
 from json import JSONEncoder
 from datetime import datetime
+import traceback
 
 class FinancialReportEncoder(JSONEncoder):
         
@@ -131,7 +132,8 @@ def get_financial_report(company, date_filed, financial_html_text):
         or quarterly Edgar filing
     '''
     financial_info = _process_financial_info(financial_html_text)
-    financial_report = FinancialReport(company, date_filed, financial_info)
+    #def __init__(self, company, date_filed, reports=[]):
+    financial_report = FinancialReport(company = company, date_filed = date_filed, reports = financial_info); #self = financial_report  
     return financial_report
 
 
@@ -153,10 +155,19 @@ def _process_financial_info(financial_html_text):
     dates, period_units, unit_text = _get_statement_meta_data(rows)
 
     for i, date in enumerate(dates):
-        dt = datetime.strptime(date, '%b. %d, %Y')
+        #i = 0; date = dates[i]
+        try:
+            dt = datetime.strptime(date, '%b. %d, %Y')
+        except ValueError as e:
+            try:
+                dt = datetime.strptime(date, '%B %d, %Y')
+            except ValueError as e:
+                print(f"Error parsing date: {date}")
+                print(f"Error details: {e}")
+                traceback.print_exc()
         financial_info.append(FinancialInfo(dt, period_units[i], {}))
-
     for row_num, row in enumerate(rows):
+        #row_num = 10; row = rows[row_num]
         data = row.find_all('td')
 
         xbrl_element = None
@@ -164,6 +175,7 @@ def _process_financial_info(financial_html_text):
         numeric_data_available = False
 
         for index, info in enumerate(data):
+            #index = 0; info = data[index]
             info_text = info.get_text().strip()
 
             class_list = None
@@ -329,9 +341,13 @@ def _process_xbrl_element(info):
     anchor = info.find('a')
     onclick_attr = anchor.attrs['onclick']
     # strip javascript
-    xbrl_element = onclick_attr.replace(
-        'top.Show.showAR( this, \'defref_', ''
-        ).replace('\', window );', '')
+    res = re.search(r"defref_([^']+)", onclick_attr)
+    if res:
+        xbrl_element = res.group(1)
+    else:
+        xbrl_element = onclick_attr.replace(
+            'top.Show.showAR( this, \'defref_', ''
+            ).replace('\', window );', '')
 
     return xbrl_element
 
