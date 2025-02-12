@@ -126,8 +126,13 @@ def get_latest_quarter_dir(year):
 
         if item['type'] == 'dir':
             # return the 
-            return int(item['name'].replace('QTR','')), item['href']
-
+            #str_qtr = item['name'].replace('QTR',''); 
+            str_qtr = re.sub(r'\D', '', item['name'])
+            int_qtr = int(str_qtr); 
+            if int_qtr in [1,2,3,4]:
+                return int_qtr, item['href']
+            else:
+                print(f"Invalid quarter: {int_qtr}")
 
 
 def find_latest_filing_info_going_back_from(period, cik, year, quarter):

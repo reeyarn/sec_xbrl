@@ -39,7 +39,7 @@ class Stock:
             # get the latest
             current_year = datetime.now().year if year == 0 else year
             current_quarter = quarter if quarter > 0 else get_latest_quarter_dir(current_year)[0]
-            print('No {} filing info found for year={} quarter={}. Finding latest.'.format(period, current_year, current_quarter))
+            #print('No {} filing info found for year={} quarter={}. Finding latest.'.format(period, current_year, current_quarter))
 
             # go back through the quarters to find the latest
             filing_info_list = find_latest_filing_info_going_back_from(period, self.cik, current_year, current_quarter)
