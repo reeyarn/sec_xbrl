@@ -46,6 +46,7 @@ def get_annual_statement(ticker="UNP", year=2022):
 if __name__ == "__main__":
     #import importlib ; import sec_xbrl.get_statement; importlib.reload(sec_xbrl.get_statement)
     from sec_xbrl.get_statement import get_annual_statement
+    #ticker = "ACN"; year=2023; get_annual_statement(ticker, year)
     import pandas as pd
     errors = []
     #ABT likely has xbrl error ; 

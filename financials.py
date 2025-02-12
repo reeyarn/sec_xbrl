@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 from json import JSONEncoder
 from datetime import datetime
 import traceback
+from dateutil import parser
 
 class FinancialReportEncoder(JSONEncoder):
         
@@ -160,8 +161,10 @@ def _process_financial_info(financial_html_text):
             dt = datetime.strptime(date, '%b. %d, %Y')
         except ValueError as e:
             try:
-                dt = datetime.strptime(date, '%B %d, %Y')
+                #dt = datetime.strptime(date, '%B %d, %Y')
+                dt = parser.parse(date) 
             except ValueError as e:
+                #ValueError: time data 'Sep. 29, 2019 USD ($)' does not match format '%B %d, %Y'
                 print(f"Error parsing date: {date}")
                 print(f"Error details: {e}")
                 traceback.print_exc()
