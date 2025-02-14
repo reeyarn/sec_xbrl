@@ -6,18 +6,60 @@ from sec_xbrl.edgar import get_financial_filing_info, get_latest_quarter_dir, fi
 from sec_xbrl.filing import Filing
 from datetime import datetime
 
+import os
+import requests
+from datetime import datetime, timedelta
+
+def update_symbols_data():
+    """
+    Downloads fresh company tickers data from SEC and saves it to SYMBOLS_DATA_PATH
+    """
+    url = "https://www.sec.gov/files/company_tickers.json"
+    try:
+        response = requests.get(url, headers={"User-Agent": "yourname@yourcompany.com"})
+        response.raise_for_status()
+        
+        # Convert JSON data to DataFrame
+        data = response.json()
+        df = pd.DataFrame.from_dict(data, orient='index')
+        
+        # Ensure CIK is padded with leading zeros to 10 digits
+        df['cik_str'] = df['cik_str'].astype(str).str.zfill(10)
+        
+        # Save to CSV
+        df.to_csv(SYMBOLS_DATA_PATH, index=False)
+        print(f"Successfully updated {SYMBOLS_DATA_PATH}")
+    except Exception as e:
+        print(f"Error updating symbols data: {str(e)}")
+        raise
+
+def should_update_symbols_file(days=28):
+    """
+    Checks if the symbols file needs to be updated (older than 28 days or 4 weeks)
+    """
+    if not os.path.exists(SYMBOLS_DATA_PATH):
+        return True
+    
+    file_time = datetime.fromtimestamp(os.path.getmtime(SYMBOLS_DATA_PATH))
+    current_time = datetime.now()
+    return (current_time - file_time) > timedelta(days=days)
+
 
 # stock
 class Stock:
     def __init__(self, symbol):
         self.symbol = symbol
+        # Check and update symbols file if needed
+        if should_update_symbols_file():
+            update_symbols_data()
         self.cik = self._find_cik()
 
 
     def _find_cik(self):
-        df = pd.read_csv(SYMBOLS_DATA_PATH, converters={'cik' : str})
+        df = pd.read_csv(SYMBOLS_DATA_PATH, converters={'cik_str' : str})
         try:
-            cik = df.loc[df['symbol'] == self.symbol]['cik'].iloc[0]
+            #cik = df.loc[df['symbol'] == self.symbol]['cik'].iloc[0]
+            cik = df.loc[df['ticker'] == self.symbol]['cik_str'].iloc[0]
             print('cik for {} is {}'.format(self.symbol, cik))
             return cik
         except IndexError as e:
@@ -66,3 +108,10 @@ class Stock:
 
 class NoFilingInfoException(Exception):
     pass
+
+
+if __name__ == "__main__":
+    #from sec_xbrl.stock import *
+    stock = Stock("UNP")
+    filing = stock.get_filing(period='annual', year=2022)
+    print(filing)

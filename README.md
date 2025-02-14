@@ -1,4 +1,4 @@
-Forked from `https://github.com/farhadab/sec-edgar-financials`
+# SEC_XBRL
 
 Testing running the code only.
 
@@ -12,7 +12,19 @@ If you want to use XBRL way, please refer to `https://github.com/reeyarn/openese
 `git clone "https://github.com/reeyarn/sec_xbrl"`
 
 
-# Example:
+## Update Log
+
+- 2025-02-14: Forked from `https://github.com/farhadab/sec-edgar-financials`
+- 2025-02-14: Updated `stock.py` to update the symbols data file using the SEC Disclosure Data API. 
+  - https://www.sec.gov/files/company_tickers.json
+
+
+## Forking Notes
+
+Forked from `https://github.com/farhadab/sec-edgar-financials`
+
+
+## Example:
 
 
 
