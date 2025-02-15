@@ -112,6 +112,6 @@ class NoFilingInfoException(Exception):
 
 if __name__ == "__main__":
     #from sec_xbrl.stock import *
-    stock = Stock("UNP")
+    stock = Stock("TSLA")
     filing = stock.get_filing(period='annual', year=2022)
     print(filing)
