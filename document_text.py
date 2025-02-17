@@ -3,10 +3,11 @@ from bs4 import XMLParsedAsHTMLWarning
 import warnings
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
-from sec_xbrl.dtd import DTD
+from .dtd import DTD
 
 
-# according to the EDGAR SGML specs, DOCUMENT.TEXT has the following children
+# According to the EDGAR SGML specs, DOCUMENT.TEXT has the following children
+# https://www.sec.gov/info/edgar/specifications/pds-dissemination-spec030314.pdf
 attrs = ['pdf', 'xml', 'xbrl', 'table', 'caption', 'stub', 'column', 'footnotes_section']
 
 class DocumentText:
@@ -36,3 +37,8 @@ class DocumentText:
                     value = BeautifulSoup(value, 'html.parser')
 
                 setattr(self, attr, value)
+
+    def __str__(self):
+        return self.data
+    def __repr__(self):
+        return  f"DocumentText(data={self.__str__()[:100]})"
