@@ -16,12 +16,12 @@ from pathlib import Path
 import os
 
 
-from openesef.util.util_mylogger import setup_logger #util_mylogger
-import logging 
-if __name__=="__main__":
-    logger = setup_logger("main", logging.INFO, log_dir="/tmp/log/")
-else:
-    logger = logging.getLogger("main.openesf.edgar") 
+# from openesef.util.util_mylogger import setup_logger #util_mylogger
+# import logging 
+# if __name__=="__main__":
+#     logger = setup_logger("main", logging.INFO, log_dir="/tmp/log/")
+# else:
+#     logger = logging.getLogger("main.openesf.edgar") 
 
 from thefuzz import fuzz
 
@@ -203,7 +203,7 @@ class Filing:
         else:
             with open(cache_path, 'w', encoding='utf-8') as f:
                 f.write(text)
-        logger.debug(f'Saved filing to cache: {cache_path}')
+        print(f'Saved filing to cache: {cache_path}')
 
     def _load_from_cache(self, cache_path):
         """Load filing text from cache and process it"""
@@ -216,10 +216,10 @@ class Filing:
                 #self.text = f.read()
                 text = f.read()
         
-        logger.debug(f'Loaded filing from cache: {cache_path}')
+        print(f'Loaded filing from cache: {cache_path}')
         
         # Process the text
-        logger.debug(f'Processing SGML from cache: {self.url}')
+        print(f'Processing SGML from cache: {self.url}')
         self._process_text(text)
         # dtd = DTD()
         # self.sgml = Sgml(self.text, dtd)
@@ -254,7 +254,7 @@ class Filing:
 
     def _fetch_and_process_filing(self):
         """Fetch filing from URL and process it"""
-        logger.debug(f'Fetching filing from {self.url}')
+        print(f'Fetching filing from {self.url}')
         response = GetRequest(self.url).response
         #self.text = response.text
         text = response.text
@@ -262,7 +262,7 @@ class Filing:
         # Save raw text to cache before processing
         self._save_to_cache(text)
 
-        logger.debug(f'Processing SGML at {self.url}')
+        print(f'Processing SGML at {self.url}')
         self._process_text(text)
         # dtd = DTD()
         # self.sgml = Sgml(self.text, dtd)
@@ -283,7 +283,7 @@ class Filing:
         try:
             cache_path = self._get_cache_path()
         except ValueError as e:
-            logger.warning(f"Warning: {e}")
+            print(f"Warning: {e}")
             # If we can't parse the URL, fetch without caching
             self._fetch_and_process_filing()
             return
@@ -293,7 +293,7 @@ class Filing:
                 self._load_from_cache(cache_path)
                 return
             except Exception as e:
-                logger.warning(f'Error loading from cache: {e}. Fetching fresh data...')
+                print(f'Error loading from cache: {e}. Fetching fresh data...')
         
         self._fetch_and_process_filing()
 
@@ -323,7 +323,7 @@ class Filing:
             #names = self._get_statement(statement_short_names)[0]
             short_name = names[0]
             filename = names[1]
-            logger.debug(f'Getting financial data for {short_name} (filename: {filename})')
+            print(f'Getting financial data for {short_name} (filename: {filename})')
             financial_html_text = self.documents[filename].doc_text.data
 
             financial_report = get_financial_report(company = self.company, date_filed = self.date_filed, financial_html_text = financial_html_text)
@@ -362,7 +362,7 @@ class Filing:
                 #print(f'Number of statements in this filing: {num_statements}')
                 if num_statements == 0:
                     str_statements = '\n   '.join(res_longnames)
-                    logger.debug(f"Documents in this filing: \n{str_statements}")
+                    print(f"Documents in this filing: \n{str_statements}")
                     raise ValueError(f'No financial documents in this filing: {self.url}')
 
 
@@ -376,7 +376,7 @@ class Filing:
         #     print('No financial documents in this filing')
 
         if len(statement_names) == 0:
-            logger.debug(f"Documents in this filing (for debugging): \n{str_documents}")
+            print(f"Documents in this filing (for debugging): \n{str_documents}")
             raise ValueError('No financial documents could be found. Likely need to update constants in edgar.filing.Statements. See above printout for the list of documents in this filing.')
             
         return statement_names

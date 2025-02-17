@@ -17,12 +17,12 @@ import requests
 from datetime import datetime, timedelta
 
 
-from openesef.util.util_mylogger import setup_logger #util_mylogger
-import logging 
-if __name__=="__main__":
-    logger = setup_logger("main", logging.INFO, log_dir="/tmp/log/")
-else:
-    logger = logging.getLogger("main.openesf.edgar") 
+# from openesef.util.util_mylogger import setup_logger #util_mylogger
+# import logging 
+# if __name__=="__main__":
+#     logger = setup_logger("main", logging.INFO, log_dir="/tmp/log/")
+# else:
+#     logger = logging.getLogger("main.openesf.edgar") 
 
 def update_symbols_data(egl = EG_LOCAL('edgar')):
     """
@@ -42,9 +42,9 @@ def update_symbols_data(egl = EG_LOCAL('edgar')):
         
         # Save to CSV
         df.to_csv(egl.symbols_data_path, index=False)
-        logger.debug(f"Successfully updated {egl.symbols_data_path}")
+        print(f"Successfully updated {egl.symbols_data_path}")
     except Exception as e:
-        logger.error(f"Error updating symbols data: {str(e)}")
+        print(f"Error updating symbols data: {str(e)}")
         raise
 
 def should_update_symbols_file(days=28, egl = EG_LOCAL('edgar')):
@@ -78,7 +78,7 @@ class Stock:
         try:
             #cik = df.loc[df['symbol'] == self.symbol]['cik'].iloc[0]
             cik = df.loc[df['ticker'] == self.symbol]['cik_str'].iloc[0]
-            logger.debug(f'cik for {self.symbol} is {cik}')
+            print(f'cik for {self.symbol} is {cik}')
             return cik
         except IndexError as e:
             raise IndexError('could not find cik, must add to symbols.csv') from None
@@ -99,7 +99,7 @@ class Stock:
             # get the latest
             current_year = datetime.now().year if year == 0 else year
             current_quarter = quarter if quarter > 0 else get_latest_quarter_dir(current_year)[0]
-            logger.debug(f'No {period} filing info found for year={current_year} quarter={current_quarter}. Finding latest.')
+            print(f'No {period} filing info found for year={current_year} quarter={current_quarter}. Finding latest.')
 
             # go back through the quarters to find the latest
             filing_info_list = find_latest_filing_info_going_back_from(period, self.cik, current_year, current_quarter, egl = self.egl)
@@ -108,7 +108,7 @@ class Stock:
                 # we still have nothing, one last try with the previous year
                 # this is useful when you're checking for data early on in a
                 # calendar year, since it takes time for the filings to come in
-                logger.debug('Will do a final attempt to find filing info from last year')
+                print('Will do a final attempt to find filing info from last year')
                 filing_info_list = find_latest_filing_info_going_back_from(period, self.cik, current_year - 1, 4, egl = self.egl)
 
             if len(filing_info_list) == 0:

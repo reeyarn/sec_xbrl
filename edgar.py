@@ -38,12 +38,12 @@ from datetime import datetime, timedelta
 from pathlib import Path
 #SYMBOLS_DATA_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 'symbols.csv')
 
-from openesef.util.util_mylogger import setup_logger #util_mylogger
-import logging 
-if __name__=="__main__":
-    logger = setup_logger("main", logging.INFO, log_dir="/tmp/log/")
-else:
-    logger = logging.getLogger("main.openesf.edgar") 
+# from openesef.util.util_mylogger import setup_logger #util_mylogger
+# import logging 
+# if __name__=="__main__":
+#     logger = setup_logger("main", logging.INFO, log_dir="/tmp/log/")
+# else:
+#     logger = logging.getLogger("main.openesf.edgar") 
 
 FINANCIAL_FORM_MAP = {
     'annual': ['10-K','10-K/A', "10-KT", "10-KT/A", "20-K", "20-K/A", "40-F"],
@@ -125,7 +125,7 @@ def get_index_json(year='', quarter=''):
         from index.json
     '''
     url = FULL_INDEX_URL+year+quarter+INDEX_JSON
-    logger.debug(f'getting data at {url}')
+    print(f'getting data at {url}')
 
     response = GetRequest(url).response
     text = response.text
@@ -257,7 +257,7 @@ def _get_filing_info(cik='', forms=[], year='', quarter=0, egl = EG_LOCAL('edgar
             # If cache doesn't exist or is too old, fetch from URL
             qtr = re.sub(r'\D', '', str(qtr))
             url = f'{FULL_INDEX_URL}{year}/QTR{qtr}/{MASTER_IDX}'
-            logger.debug(f'Fetching filing info from {url}')
+            print(f'Fetching filing info from {url}')
             
             response = GetRequest(url).response
             raw_text = response.text
@@ -278,7 +278,7 @@ def _get_filing_info(cik='', forms=[], year='', quarter=0, egl = EG_LOCAL('edgar
             else:
                 with open(cache_path, 'w') as f:
                     f.write(processed_text)
-            logger.debug(f'Saved response to cache: {cache_path}')
+            print(f'Saved response to cache: {cache_path}')
         return processed_text
 
     for form in forms:
