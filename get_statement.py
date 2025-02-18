@@ -1,6 +1,7 @@
 from sec_xbrl.stock import Stock
 import pandas as pd
 import traceback
+from sec_xbrl.filing import EG_LOCAL
 
 def statement_to_df(statements):
     dfs = []
@@ -17,44 +18,34 @@ def statement_to_df(statements):
     df = pd.concat(dfs)
     return df
 
-
 def get_annual_statement(ticker="UNP", year=2022):
-    #ticker="ORCL"; year=2022
-    #ticker = "ACN"; year=2023; get_annual_statement(ticker, year)
-    stock = Stock(ticker)
-    filing = stock.get_filing(period='annual', year=year); #self = filing
-    dfs = []
-    try:
-        income_statements = filing.get_income_statements()
-        df_income = statement_to_df(income_statements)
-        df_income['statement'] = 'IncomeStatement'
-        dfs.append(df_income)
-    except Exception as e:
-        print(f"Error for {ticker} in {year}: {e}")
-        traceback.print_exc(limit = 10)
-
-    try:
-        cash_flows = filing.get_cash_flows()
-        df_cash = statement_to_df(cash_flows)
-        df_cash["statement"] = "CashFlowStatement"
-        dfs.append(df_cash)
-    except Exception as e:
-        print(f"Error for {ticker} in {year}: {e}")
-        traceback.print_exc(limit = 10)
-
-    try:
-        balance_sheets = filing.get_balance_sheets()
-        df_balance = statement_to_df(balance_sheets)
-        df_balance["statement"]="BalanceSheet"
-        dfs.append(df_balance)
-    except Exception as e:
-        print(f"Error for {ticker} in {year}: {e}")
-        traceback.print_exc(limit = 10)
+    #ticker="UNP"; year=2022
+    egl = EG_LOCAL(os.path.expanduser('~'))
+    os.makedirs(os.path.join(os.path.expanduser('~'), '10k-bycik'), exist_ok=True)
+    #egl.symbols_data_path
+    #stock = Stock('AAPL', egl = egl); #self = stock
+    stock = Stock(ticker, egl = egl)
+    filing = stock.get_filing(period='annual', year=year)
+    income_statements = filing.get_income_statements()
+    cash_flows = filing.get_cash_flows()
+    balance_sheets = filing.get_balance_sheets()
     #retained_earnings = filing.get_retained_earnings()
-
-
-    df_all = pd.concat(dfs)
+    
+    df_income = statement_to_df(income_statements)
+    df_income['statement'] = 'IncomeStatement'
+    
+    df_cash = statement_to_df(cash_flows)
+    df_cash["statement"] = "CashFlowStatement"
+    
+    df_balance = statement_to_df(balance_sheets)
+    df_balance["statement"]="BalanceSheet"
+    #df_retained_earnings = statement_to_df(retained_earnings)
+    #df_retained_earnings["statement"]="RetainedEarnings"
+    #self = filing
+    df_all = pd.concat([df_income, df_cash, df_balance])
     return df_all
+
+
 
 if __name__ == "__main__":
     #import importlib ; import sec_xbrl.get_statement; importlib.reload(sec_xbrl.get_statement); from sec_xbrl.get_statement import *
