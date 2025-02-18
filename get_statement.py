@@ -2,7 +2,7 @@ from sec_xbrl.stock import Stock
 import pandas as pd
 import traceback
 from sec_xbrl.filing import EG_LOCAL
-
+import os
 def statement_to_df(statements):
     dfs = []
     for report in statements.reports :
